@@ -24,15 +24,15 @@ jobs:
 
       - name: Flutter pub get
         run: |
-          cd app
+          cd your_folder
           flutter pub get
 
       - name: Analyze project
         run: |
-          cd app
+          cd your_folder
           flutter analyze
 
       - name: Run tests
         run: |
-          cd app
+          cd your_folder
           flutter test

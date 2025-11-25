@@ -1,6 +1,5 @@
 name: ui_builder_c
 description: Drag-and-drop UI builder with code panels
-#version: 1.0.0+1   # Initial version (required for iOS and Android builds)
 
 environment:
   sdk: ">=3.0.0 <4.0.0"
@@ -12,7 +11,6 @@ dependencies:
 
 flutter:
   uses-material-design: true
-
 dev_dependencies:
   flutter_test:
     sdk: flutter

@@ -1,1 +1,79 @@
 
+name: Build & Release (Android + iOS + TestFlight)
+
+on:
+  push:
+    branches: [ main, master, develop ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  build:
+    runs-on: macos-latest
+
+    steps:
+      # Checkout code
+      - uses: actions/checkout@v3
+
+      # Setup Java (for Android)
+      - uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      # Setup Flutter (correct version)
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.38.1'
+          channel: 'stable'
+          architecture: arm64
+
+      # Install Flutter dependencies
+      - name: Install Dependencies
+        run: flutter pub get
+
+      # --------------------------
+      # Build Android
+      # --------------------------
+      - name: Build Android APK
+        run: flutter build apk --release --split-per-abi
+
+      - name: Build Android AAB
+        run: flutter build appbundle --release
+
+      # --------------------------
+      # Build iOS IPA (no codesign)
+      # --------------------------
+      - name: Build iOS IPA
+        run: |
+          flutter build ios --release --no-codesign
+          cd build/ios/iphoneos
+          mkdir Payload
+          cp -R Runner.app Payload/
+          zip -r app.ipa Payload
+
+      # --------------------------
+      # Upload IPA to TestFlight
+      # --------------------------
+     # - name: Upload to TestFlight
+      #  uses: apple-actions/upload-testflight-build@v1
+      #  with:
+       #   app-type: ios
+        #  issuer-id: ${{ secrets.APPSTORE_ISSUER_ID }}
+         # api-key-id: ${{ secrets.APPSTORE_KEY_ID }}
+        #  api-private-key: ${{ secrets.APPSTORE_PRIVATE_KEY }}
+         # bundle-id: ${{ secrets.BUNDLE_ID }}
+         # file: build/ios/iphoneos/app.ipa
+
+      # --------------------------
+      # Upload ALL builds to GitHub Releases
+      # --------------------------
+      - name: Create GitHub Release
+        uses: ncipollo/release-action@v1
+        with:
+          artifacts: >
+            build/app/outputs/apk/release/*,
+            build/app/outputs/bundle/release/*.aab,
+            build/ios/iphoneos/app.ipa
+          tag: v1.0.${{ github.run_number }}
+          token: ${{ secrets.TOKEN }}

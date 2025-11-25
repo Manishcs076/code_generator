@@ -32,50 +32,6 @@ jobs:
         run: flutter pub get
 
       # --------------------------
-      # Auto Semantic Versioning
-      # --------------------------
-      - name: Auto Semantic Versioning
-        id: version
-        run: |
-          # Read current version from pubspec.yaml
-          CURRENT_VERSION=$(grep "version:" pubspec.yaml | awk '{print $2}')
-          VERSION_NAME=$(echo $CURRENT_VERSION | cut -d'+' -f1)
-          BUILD_NUMBER=$(echo $CURRENT_VERSION | cut -d'+' -f2)
-
-          IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION_NAME"
-
-          echo "Current version: $MAJOR.$MINOR.$PATCH+$BUILD_NUMBER"
-          echo "Branch: $GITHUB_REF"
-
-          # Determine version bump
-          if [[ "$GITHUB_REF" == "refs/heads/main" || "$GITHUB_REF" == "refs/heads/master" ]]; then
-            # Major bump
-            MAJOR=$((MAJOR + 1))
-            MINOR=0
-            PATCH=0
-          elif [[ "$GITHUB_REF" == "refs/heads/develop" ]]; then
-            # Minor bump
-            MINOR=$((MINOR + 1))
-            PATCH=0
-          else
-            # Patch bump
-            PATCH=$((PATCH + 1))
-          fi
-
-          # Increment build number
-          BUILD_NUMBER=$((BUILD_NUMBER + 1))
-
-          NEW_VERSION_NAME="$MAJOR.$MINOR.$PATCH"
-          echo "New version: $NEW_VERSION_NAME+$BUILD_NUMBER"
-
-          # Update pubspec.yaml
-          sed -i '' "s/version: .*/version: $NEW_VERSION_NAME+$BUILD_NUMBER/" pubspec.yaml
-
-          # Export environment variables
-          echo "VERSION_NAME=$NEW_VERSION_NAME" >> $GITHUB_ENV
-          echo "BUILD_NUMBER=$BUILD_NUMBER" >> $GITHUB_ENV
-
-      # --------------------------
       # Build Android
       # --------------------------
       - name: Build Android APK
@@ -96,12 +52,17 @@ jobs:
           zip -r app.ipa Payload
 
       # --------------------------
-      # Clean unnecessary directories before GitHub Release
+      # Upload IPA to TestFlight
       # --------------------------
-      - name: Clean Flutter Release Artifacts
-        run: |
-          rm -rf build/app/outputs/apk/release/baselineProfiles
-          rm -rf build/app/outputs/apk/release/merged*
+     # - name: Upload to TestFlight
+      #  uses: apple-actions/upload-testflight-build@v1
+      #  with:
+       #   app-type: ios
+        #  issuer-id: ${{ secrets.APPSTORE_ISSUER_ID }}
+         # api-key-id: ${{ secrets.APPSTORE_KEY_ID }}
+        #  api-private-key: ${{ secrets.APPSTORE_PRIVATE_KEY }}
+         # bundle-id: ${{ secrets.BUNDLE_ID }}
+         # file: build/ios/iphoneos/app.ipa
 
       # --------------------------
       # Upload ALL builds to GitHub Releases
@@ -110,8 +71,8 @@ jobs:
         uses: ncipollo/release-action@v1
         with:
           artifacts: >
-            build/app/outputs/apk/release/*.apk,
+            build/app/outputs/apk/release/*,
             build/app/outputs/bundle/release/*.aab,
             build/ios/iphoneos/app.ipa
-          tag: v$VERSION_NAME+$BUILD_NUMBER
+          tag: v1.0.${{ github.run_number }}
           token: ${{ secrets.TOKEN }}
